@@ -1,0 +1,48 @@
+---
+# 确保 Python3 存在（Ubuntu 24.04 默认都有，如缺失则自动安装）
+- name: 确保 Python3 已安装
+  raw: test -f /usr/bin/python3 || (apt-get update -qq && apt-get install -y -qq python3)
+  become: true
+  changed_when: false
+
+- name: 更新 apt 缓存（Debian/Ubuntu）
+  apt:
+    update_cache: yes
+    cache_valid_time: 3600
+  when: ansible_facts['os_family'] == "Debian"
+
+- name: 安装基础依赖（Debian/Ubuntu）
+  apt:
+    name:
+      - curl
+      - software-properties-common
+      - apt-transport-https
+      - ca-certificates
+      - gnupg
+    state: present
+  when: ansible_facts['os_family'] == "Debian"
+
+- name: 更新 yum 缓存（Red Hat/CentOS）
+  yum:
+    update_cache: yes
+  when: ansible_facts['os_family'] == "RedHat"
+
+- name: 安装基础依赖（Red Hat/CentOS）
+  yum:
+    name:
+      - curl
+      - ca-certificates
+    state: present
+  when: ansible_facts['os_family'] == "RedHat"
+
+- name: 创建网站根目录
+  file:
+    path: "{{ www_root }}"
+    state: directory
+    mode: '0755'
+
+- name: 创建 Certbot webroot 目录
+  file:
+    path: "{{ webroot_path }}"
+    state: directory
+    mode: '0755'

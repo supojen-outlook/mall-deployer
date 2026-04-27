@@ -1,0 +1,100 @@
+---
+- name: 创建网站目录
+  file:
+    path: "{{ www_root }}/{{ domain }}"
+    state: directory
+    mode: '0755'
+
+- name: 部署 index.html 模板
+  template:
+    src: index.html.j2
+    dest: "{{ www_root }}/{{ domain }}/index.html"
+
+- name: 部署其他静态文件
+  copy:
+    src: "src/"
+    dest: "{{ www_root }}/{{ domain }}/"
+
+- name: 检查 keygen-tool 是否存在
+  stat:
+    path: "{{ role_path }}/files/keygen-tool"
+  register: keygen_stat
+  delegate_to: localhost
+  become: false
+
+- name: 创建 keys 目录
+  file:
+    path: "{{ role_path }}/files/keys"
+    state: directory
+    mode: '0755'
+  when: keygen_stat.stat.exists
+  delegate_to: localhost
+  become: false
+
+- name: 生成 AES 密钥
+  command: "{{ role_path }}/files/keygen-tool --aes"
+  args:
+    chdir: "{{ role_path }}/files/keys"
+  when:
+    - keygen_stat.stat.exists
+    - not (role_path ~ '/files/keys/id_aes') is file
+  delegate_to: localhost
+  become: false
+
+- name: 生成 RSA v1 密钥
+  command: "{{ role_path }}/files/keygen-tool --rsa --output id_rsa.v1"
+  args:
+    chdir: "{{ role_path }}/files/keys"
+  when:
+    - keygen_stat.stat.exists
+    - not (role_path ~ '/files/keys/id_rsa.v1') is file
+  delegate_to: localhost
+  become: false
+
+- name: 生成 RSA v2 密钥
+  command: "{{ role_path }}/files/keygen-tool --rsa --output id_rsa.v2"
+  args:
+    chdir: "{{ role_path }}/files/keys"
+  when:
+    - keygen_stat.stat.exists
+    - not (role_path ~ '/files/keys/id_rsa.v2') is file
+  delegate_to: localhost
+  become: false
+
+- name: 生成 .env 文件
+  template:
+    src: .env.j2
+    dest: "{{ www_root }}/{{ domain }}/.env"
+
+- name: 部署 docker-compose.yaml
+  template:
+    src: docker-compose.yaml.j2
+    dest: "{{ www_root }}/{{ domain }}/docker-compose.yaml"
+
+- name: 复制密钥文件到服务器
+  copy:
+    src: "keys/"
+    dest: "{{ www_root }}/{{ domain }}/keys/"
+    mode: '0644'
+
+- name: 设置密钥目录权限（允许所有人进入）
+  file:
+    path: "{{ www_root }}/{{ domain }}/keys/"
+    mode: '0755'
+
+- name: 设置密钥文件权限（允许所有人读取）
+  file:
+    path: "{{ www_root }}/{{ domain }}/keys/"
+    mode: '0644'
+    recurse: yes
+
+- name: 启动 Docker Compose
+  command: "docker-compose up -d"
+  args:
+    chdir: "{{ www_root }}/{{ domain }}"
+
+- name: 部署站点配置
+  template:
+    src: domain.conf.j2
+    dest: "/etc/nginx/conf.d/{{ domain }}.conf"
+  notify: reload nginx

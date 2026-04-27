@@ -1,0 +1,59 @@
+---
+# Ubuntu 24.04 PPA 尚未发布，直接使用官方仓库
+# - name: 添加 Nginx PPA（Debian/Ubuntu）
+#   apt_repository:
+#     repo: ppa:nginx/stable
+#     state: present
+#   when: ansible_facts['os_family'] == "Debian"
+
+- name: 添加 Nginx 官方源（Red Hat/CentOS）
+  yum_repository:
+    name: nginx
+    description: Nginx official repository
+    baseurl: http://nginx.org/packages/rhel/$releasever/$basearch/
+    gpgcheck: yes
+    gpgkey: https://nginx.org/keys/nginx_signing.key
+    enabled: yes
+  when: ansible_facts['os_family'] == "RedHat"
+
+- name: 更新 apt 缓存并安装 Nginx（Debian/Ubuntu）
+  apt:
+    name: nginx
+    state: present
+    update_cache: yes
+  notify: restart nginx
+  when: ansible_facts['os_family'] == "Debian"
+
+- name: 安装 Nginx（Red Hat/CentOS）
+  yum:
+    name: nginx
+    state: present
+  notify: restart nginx
+  when: ansible_facts['os_family'] == "RedHat"
+
+- name: 创建 nginx 配置目录
+  file:
+    path: /etc/nginx/conf.d
+    state: directory
+    mode: '0755'
+
+- name: 部署 nginx 主配置
+  template:
+    src: nginx.conf.j2
+    dest: /etc/nginx/nginx.conf
+  notify: reload nginx
+
+- name: 部署 conf.d 配置
+  copy:
+    src: "conf.d/{{ item }}"
+    dest: "/etc/nginx/conf.d/{{ item }}"
+  loop:
+    - 00-letsencrypt.conf
+    - ssl-params.conf
+  notify: reload nginx
+
+- name: 启动并启用 Nginx
+  systemd:
+    name: nginx
+    state: started
+    enabled: yes

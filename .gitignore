@@ -1,0 +1,4 @@
+# Ansible 敏感文件（不应提交到 Git）
+inventory/*/hosts.yml
+inventory/*/secrets.yml
+.vault-pass

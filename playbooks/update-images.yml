@@ -1,0 +1,74 @@
+---
+# 更新 Docker 镜像版本并重新部署
+# 用法：ansible-playbook -i inventory/staging/hosts.yml playbooks/update-images.yml
+# 可选参数：-e "client_version=v1.1.0" -e "admin_version=v1.1.0" -e "api_version=v1.1.0"
+
+- name: 更新 Docker 镜像版本
+  hosts: webservers
+  become: true
+  vars_files:
+    - "../inventory/{{ env | default('staging') }}/secrets.yml"
+  
+  tasks:
+    - name: 显示当前版本
+      debug:
+        msg:
+          - "当前版本："
+          - "  client_version: {{ client_version | default('v1.0.0') }}"
+          - "  admin_version: {{ admin_version | default('v1.0.0') }}"
+          - "  api_version: {{ api_version | default('v1.0.0') }}"
+
+    - name: 检查目标目录
+      stat:
+        path: "{{ www_root }}/{{ domain }}"
+      register: target_dir
+
+    - name: 确保目录存在
+      fail:
+        msg: "网站目录不存在: {{ www_root }}/{{ domain }}，请先执行 make deploy 进行首次部署"
+      when: not target_dir.stat.exists
+
+    - name: 更新 .env 文件
+      template:
+        src: ../roles/app/templates/.env.j2
+        dest: "{{ www_root }}/{{ domain }}/.env"
+
+    - name: 更新 docker-compose.yaml
+      template:
+        src: ../roles/app/templates/docker-compose.yaml.j2
+        dest: "{{ www_root }}/{{ domain }}/docker-compose.yaml"
+
+    - name: 拉取最新镜像
+      command: "docker-compose pull"
+      args:
+        chdir: "{{ www_root }}/{{ domain }}"
+      register: pull_result
+      changed_when: "'Pull complete' in pull_result.stdout or 'Downloaded newer image' in pull_result.stdout"
+
+    - name: 重新启动容器
+      command: "docker-compose up -d"
+      args:
+        chdir: "{{ www_root }}/{{ domain }}"
+
+    - name: 清理旧镜像
+      command: "docker image prune -f"
+      ignore_errors: true
+
+    - name: 显示新版本
+      debug:
+        msg:
+          - "镜像更新完成！"
+          - "  mall-client: {{ client_version | default('v1.0.0') }}"
+          - "  mall-admin: {{ admin_version | default('v1.0.0') }}"
+          - "  mall-api: {{ api_version | default('v1.0.0') }}"
+
+    - name: 检查容器状态
+      command: "docker-compose ps"
+      args:
+        chdir: "{{ www_root }}/{{ domain }}"
+      register: ps_result
+      changed_when: false
+
+    - name: 显示容器状态
+      debug:
+        var: ps_result.stdout_lines

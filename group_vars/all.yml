@@ -1,0 +1,20 @@
+---
+# 通用变量
+
+# 证书配置（certbot_email 请在 inventory/*/secrets.yml 中设置）
+webroot_path: /var/www/certbot
+
+# 默认端口（可在环境变量文件中覆盖）
+client_port: 8081
+admin_port: 8082
+api_port: 7175
+
+# 应用版本（三个服务独立控制，默认 v1.0.0）
+client_version: v1.0.0
+admin_version: v1.0.0
+api_version: v1.0.0
+
+# 路径
+www_root: /var/www
+
+# Docker 配置变量自动从 group_vars 和 secrets.yml 加载

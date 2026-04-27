@@ -1,0 +1,23 @@
+---
+# Production 环境变量
+
+env: production
+
+# 域名
+domain: your-domain.com
+
+# Production 端口
+client_port: 8081
+admin_port: 8082
+api_port: 7175
+
+# 路径
+www_root: /var/www
+
+# 应用版本
+client_version: v1.0.0
+admin_version: v1.0.0
+api_version: v1.0.0
+
+# 证书配置
+webroot_path: /var/www/certbot

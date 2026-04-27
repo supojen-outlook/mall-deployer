@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>小紅帽選物 | 專業電商入口網</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary-color: #534619;
+            --hover-color: #6c5d2f;
+            --price-color: #e60023;
+            /* 這裡對應第一段的背景與文字顏色 */
+            --nav-bg: #534619; 
+            --nav-text: #ffdbd1; 
+            --max-width: 1200px; 
+        }
+
+        @media (min-width: 1600px) {
+            :root { --max-width: 1600px; }
+        }
+
+        body { 
+            font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; 
+            margin: 0; 
+            padding: 0;
+            background-color: #fcfcfc; 
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* --- 核心修正：同步第一段 Nav Bar 樣式 --- */
+        .site-nav-wrapper {
+            width: 100%;
+            background-color: var(--nav-bg);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .nav-container {
+            width: 96%; 
+            max-width: var(--max-width);
+            margin: 0 auto;
+            /* 同步：由 15px 縮減為 8px */
+            padding: 8px 5px; 
+            display: flex;
+            align-items: center;
+            box-sizing: border-box;
+        }
+
+        /* 額外針對超大螢幕的寬度調整 */
+        @media (min-width: 1600px) {
+            .nav-container {
+                max-width: 1600px;
+            }
+        }
+
+        .nav-menu {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            flex: 1; 
+        }
+
+        .nav-menu li { margin-right: 30px; } 
+        /* 最後一個項目（註冊/登入）靠右 */
+        .nav-menu li:last-child { margin-left: auto; margin-right: 0; }
+
+        .nav-menu li a {
+            text-decoration: none;
+            color: var(--nav-text);
+            font-weight: bold;
+            /* 同步：字體大小 14px */
+            font-size: 14px;
+            white-space: nowrap;
+            transition: opacity 0.2s;
+            letter-spacing: 1px;
+        }
+        .nav-menu li a:hover { opacity: 0.7; }
+
+        /* --- 商品展示區域 --- */
+        .taobao-product { padding: 20px 0; flex: 1; display: flex; justify-content: center; }
+        .container { width: 96%; max-width: var(--max-width); margin: 0 auto; }
+        .seo-header { text-align: center; margin-bottom: 30px; padding: 20px 0; border-bottom: 1px solid #eee; }
+        .seo-header h1 { color: var(--primary-color); font-size: 26px; margin-bottom: 8px; }
+        .product-list { display: flex; flex-wrap: wrap; justify-content: flex-start; margin: -6px; }
+
+        .product-card {
+            flex: 0 0 calc(16.666% - 12px);
+            max-width: calc(16.666% - 12px);
+            margin: 6px;
+            text-decoration: none;
+            color: inherit;
+            background: #fff;
+            border-radius: 8px;
+            overflow: hidden;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .product-card:hover { transform: translateY(-4px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        .product-card img { width: 100%; aspect-ratio: 1/1; object-fit: cover; display: block; background: #f0f0f0; border-radius: 8px; }
+        .product-info { padding: 6px 6px 8px 6px; } 
+        .product-name { font-size: 15px; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-bottom: 2px; }
+        .product-tags { font-size: 12px; color: var(--hover-color); margin-bottom: 3px; height: 1.2em; overflow: hidden; white-space: nowrap;}
+        .product-price { font-size: 18px; color: var(--price-color); font-weight: bold; }
+
+        /* --- Footer 區域 --- */
+        .site-footer {
+            background-color: var(--primary-color);
+            color: var(--nav-text);
+            padding: 50px 0 0 0;
+            margin-top: 60px;
+        }
+
+        .footer-container {
+            width: 96%;
+            max-width: var(--max-width);
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 40px;
+        }
+
+        .footer-column { flex: 1; min-width: 200px; }
+        .brand-col { flex: 1.5; }
+        .footer-logo-text { font-size: 22px; font-weight: bold; margin-bottom: 15px; display: block; letter-spacing: 2px; }
+        .brand-col p { font-size: 14px; line-height: 1.6; opacity: 0.8; max-width: 320px; margin-bottom: 20px; }
+
+        .social-links { display: flex; gap: 15px; }
+        .social-links a {
+            display: flex; align-items: center; justify-content: center;
+            width: 36px; height: 36px;
+            background-color: rgba(255, 219, 209, 0.1);
+            color: var(--nav-text);
+            border-radius: 50%;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+        .social-links a:hover {
+            background-color: var(--nav-text); color: var(--primary-color);
+            transform: translateY(-3px);
+        }
+
+        .footer-column h3 { font-size: 16px; margin-bottom: 18px; position: relative; padding-bottom: 8px; }
+        .footer-column h3::after { content: ''; position: absolute; left: 0; bottom: 0; width: 30px; height: 2px; background: var(--nav-text); }
+        .footer-column ul { list-style: none; padding: 0; margin: 0; }
+        .footer-column ul li { margin-bottom: 10px; }
+        .footer-column ul li a { color: var(--nav-text); text-decoration: none; font-size: 14px; opacity: 0.7; transition: 0.2s; }
+        .footer-column ul li a:hover { opacity: 1; text-decoration: underline; }
+
+        .footer-bottom {
+            width: 96%;
+            max-width: var(--max-width);
+            margin: 30px auto 0 auto;
+            padding: 15px 0 20px 0;
+            border-top: 1px solid rgba(255, 219, 209, 0.1);
+            text-align: center;
+            font-size: 12px;
+            opacity: 0.5;
+        }
+        .footer-bottom p { margin: 0; }
+
+        /* RWD */
+        @media (max-width: 768px) { 
+            .nav-menu { justify-content: center; }
+            .nav-menu li { margin: 0 10px; }
+            .nav-menu li:last-child { margin-left: 10px; }
+            .product-card { flex: 0 0 calc(33.33% - 12px); max-width: calc(33.33% - 12px); } 
+            .footer-container { flex-direction: column; text-align: center; }
+            .footer-column h3::after { left: 50%; transform: translateX(-50%); }
+            .social-links { justify-content: center; }
+            .brand-col p { margin: 0 auto 20px auto; }
+        }
+        @media (max-width: 500px) { .product-card { flex: 0 0 calc(50% - 12px); max-width: calc(50% - 12px); } }
+    </style>
+</head>
+<body>
+
+    <header class="site-nav-wrapper">
+        <nav class="nav-container">
+            <ul class="nav-menu">
+                <li><a href="/">主頁</a></li>
+                <li><a href="/shop">商城</a></li>
+                <li><a href="/shop/about">關於我們</a></li>
+                <li><a href="/shop/login">註冊｜登入</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="taobao-product">
+        <div class="container">
+            <header class="seo-header">
+                <h1>小紅帽精選：工藝陶瓷選物</h1>
+                <p>致力於結合傳統工藝與現代生活，呈現極致品質。</p>
+            </header>
+            <main id="product-container" class="product-list">
+                </main>
+        </div>
+    </div>
+
+    <footer class="site-footer">
+        <div class="footer-container">
+            <div class="footer-column brand-col">
+                <span class="footer-logo-text">小紅帽資訊</span>
+                <p>專注於 Web 開發與電商解決方案，並為您嚴選最具溫度的工藝好物。</p>
+                <div class="social-links">
+                    <a href="#" target="_blank" title="YouTube"><i class="fa-brands fa-youtube"></i></a>
+                    <a href="#" target="_blank" title="Instagram"><i class="fa-brands fa-instagram"></i></a>
+                    <a href="#" target="_blank" title="小紅書"><i class="fa-solid fa-book-open"></i></a>
+                </div>
+            </div>
+            <div class="footer-column">
+                <h3>快速導覽</h3>
+                <ul>
+                    <li><a href="/">首頁</a></li>
+                    <li><a href="/shop">精選商城</a></li>
+                    <li><a href="/shop/about">關於我們</a></li>
+                </ul>
+            </div>
+            <div class="footer-column">
+                <h3>聯絡我們</h3>
+                <ul>
+                    <li><a href="/support">顧客中心</a></li>
+                    <li style="font-size: 14px; opacity: 0.7; margin-top: 10px;">service@redhat.tw</li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2026 小紅帽資訊 (Xiao Hong Mao Technology). All Rights Reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        const API_URL = 'https://{{ domain }}/api/products';
+        async function fetchProducts() {
+            const container = document.getElementById('product-container');
+            try {
+                const response = await fetch(`${API_URL}?size=18`);
+                const data = await response.json();
+                const products = data.list || [];
+                container.innerHTML = '';
+                products.forEach(p => {
+                    const card = document.createElement('a');
+                    card.className = 'product-card';
+                    card.href = `/shop/product/${p.id}`;
+                    card.innerHTML = `
+                        <img src="${p.mainImageUrl}" alt="${p.name}" onerror="this.src='https://via.placeholder.com/300?text=商品圖片'">
+                        <div class="product-info">
+                            <div class="product-name">${p.name}</div>
+                            <div class="product-tags">${Array.isArray(p.tags) ? p.tags.join(', ') : ''}</div>
+                            <div class="product-price">NT$ ${parseFloat(p.price).toLocaleString()}</div>
+                        </div>`;
+                    container.appendChild(card);
+                });
+            } catch (e) { 
+                container.innerHTML = '<div style="text-align:center; width:100%; padding:50px;">載入失敗</div>'; 
+            }
+        }
+        document.addEventListener('DOMContentLoaded', fetchProducts);
+    </script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+---
+# Staging 环境变量
+
+env: staging
+
+# 域名
+domain: t8.supojen.com
+
+# Staging 端口（可以不同）
+client_port: 9081
+admin_port: 9082
+api_port: 7175
+
+# 路径
+www_root: /var/www
+
+# 应用版本
+client_version: v1.0.5
+admin_version: v1.0.3
+api_version: v1.0.36
+
+# 证书配置
+webroot_path: /var/www/certbot

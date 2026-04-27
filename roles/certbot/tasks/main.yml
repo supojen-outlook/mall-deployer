@@ -1,0 +1,58 @@
+---
+- name: 安装 Certbot（Debian/Ubuntu）
+  apt:
+    name: certbot
+    state: present
+  when: ansible_facts['os_family'] == "Debian"
+
+- name: 安装 EPEL 仓库（Red Hat/CentOS）
+  yum:
+    name: epel-release
+    state: present
+  when: ansible_facts['os_family'] == "RedHat"
+
+- name: 安装 Certbot（Red Hat/CentOS）
+  yum:
+    name: certbot
+    state: present
+  when: ansible_facts['os_family'] == "RedHat"
+
+- name: 检查证书是否已存在
+  stat:
+    path: "/etc/letsencrypt/live/{{ domain }}/fullchain.pem"
+  register: cert_exists
+
+- name: 确保 Nginx 已完全重启
+  service:
+    name: nginx
+    state: restarted
+  when: not cert_exists.stat.exists
+
+- name: 等待 Nginx 就绪
+  wait_for:
+    port: 80
+    delay: 2
+  when: not cert_exists.stat.exists
+
+- name: 申请 SSL 证书（webroot 模式）
+  command: >
+    certbot certonly --webroot
+    -w {{ webroot_path }}
+    -d {{ domain }}
+    --agree-tos
+    --non-interactive
+    --email {{ certbot_email }}
+  when: not cert_exists.stat.exists
+  notify: reload nginx
+
+- name: 等待 OCSP 信息生效
+  pause:
+    seconds: 30
+  when: not cert_exists.stat.exists
+
+- name: 设置证书自动续期
+  cron:
+    name: "Certbot 自动续期"
+    minute: "0"
+    hour: "3"
+    job: "certbot renew --quiet --deploy-hook 'systemctl reload nginx'"

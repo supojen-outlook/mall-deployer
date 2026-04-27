@@ -1,0 +1,12 @@
+---
+- name: 完整部署网站
+  hosts: webservers
+  become: true
+  vars_files:
+    - "../inventory/{{ env | default('staging') }}/secrets.yml"
+  roles:
+    - common
+    - nginx
+    - certbot
+    - docker
+    - app

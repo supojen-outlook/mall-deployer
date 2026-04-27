@@ -1,0 +1,30 @@
+---
+- name: 添加新域名
+  hosts: webservers
+  become: true
+  vars_prompt:
+    - name: new_domain
+      prompt: "请输入新域名 (例如: test.example.com)"
+      private: false
+      
+  tasks:
+    - name: 申请 SSL 证书
+      include_role:
+        name: certbot
+      vars:
+        domain: "{{ new_domain }}"
+        certbot_email: "admin@{{ new_domain }}"
+
+    - name: 创建站点目录
+      file:
+        path: "{{ www_root }}/{{ new_domain }}"
+        state: directory
+        mode: '0755'
+
+    - name: 创建站点配置
+      template:
+        src: domain.conf.j2
+        dest: "/etc/nginx/conf.d/{{ new_domain }}.conf"
+      vars:
+        domain: "{{ new_domain }}"
+      notify: reload nginx

@@ -1,0 +1,74 @@
+---
+- name: 安装 Docker 依赖（Debian/Ubuntu）
+  apt:
+    name:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - gnupg
+      - lsb-release
+    state: present
+  when: ansible_facts['os_family'] == "Debian"
+
+- name: 安装 Docker 依赖（Red Hat/CentOS）
+  yum:
+    name:
+      - yum-utils
+      - device-mapper-persistent-data
+      - lvm2
+    state: present
+  when: ansible_facts['os_family'] == "RedHat"
+
+- name: 添加 Docker GPG key（Debian/Ubuntu）
+  apt_key:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    state: present
+  when: ansible_facts['os_family'] == "Debian"
+
+- name: 添加 Docker 仓库（Red Hat/CentOS）
+  shell: |
+    yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+  args:
+    creates: /etc/yum.repos.d/docker-ce.repo
+  when: ansible_facts['os_family'] == "RedHat"
+
+- name: 添加 Docker APT repository（Debian/Ubuntu）
+  apt_repository:
+    repo: "deb [arch=amd64] https://download.docker.com/linux/{{ ansible_facts['distribution'] | lower }} {{ ansible_facts['distribution_release'] }} stable"
+    state: present
+  when: ansible_facts['os_family'] == "Debian"
+
+- name: 更新 apt 缓存（Debian/Ubuntu）
+  apt:
+    update_cache: yes
+  when: ansible_facts['os_family'] == "Debian"
+
+- name: 安装 Docker（Debian/Ubuntu）
+  apt:
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+    state: present
+  when: ansible_facts['os_family'] == "Debian"
+
+- name: 安装 Docker（Red Hat/CentOS）
+  yum:
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+    state: present
+  when: ansible_facts['os_family'] == "RedHat"
+
+- name: 安装 Docker Compose
+  get_url:
+    url: "https://github.com/docker/compose/releases/download/v2.24.0/docker-compose-{{ ansible_facts['system'] }}-{{ ansible_facts['architecture'] }}"
+    dest: /usr/local/bin/docker-compose
+    mode: '0755'
+
+- name: 启动并启用 Docker
+  systemd:
+    name: docker
+    state: started
+    enabled: yes

@@ -1,0 +1,12 @@
+all:
+  children:
+    webservers:
+      hosts:
+        staging-server:
+          # 请替换为实际的 staging 服务器 IP 或域名
+          ansible_host: YOUR_STAGING_IP_OR_DOMAIN
+          ansible_user: ubuntu
+          # 如果使用非标准 SSH 端口
+          # ansible_port: 22
+          # 如果使用特定 SSH 密钥
+          # ansible_ssh_private_key_file: ~/.ssh/id_rsa
