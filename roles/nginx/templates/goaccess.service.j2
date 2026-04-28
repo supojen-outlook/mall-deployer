@@ -8,6 +8,7 @@ ExecStart=/usr/bin/goaccess /var/log/nginx/access.log \
     -o {{ goaccess_stats_path }} \
     --log-format=COMBINED \
     --real-time-html \
+    --geoip-database=/var/lib/GeoIP/GeoLite2-City.mmdb \
     --ws-url=wss://{{ domain }}:443/goaccess-ws \
     --addr=127.0.0.1 \
     --port={{ goaccess_ws_port }}

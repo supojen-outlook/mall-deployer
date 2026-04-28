@@ -78,7 +78,7 @@
 
 - name: 加入 GoAccess APT repository (Debian/Ubuntu)
   apt_repository:
-    repo: "deb [signed-by=/usr/share/keyrings/goaccess.gpg] https://deb.goaccess.io/ {{ ansible_distribution_release }} main"
+    repo: "deb [signed-by=/usr/share/keyrings/goaccess.gpg] https://deb.goaccess.io/ {{ ansible_facts['distribution_release'] }} main"
     state: present
     filename: goaccess
   when: ansible_facts['os_family'] == "Debian"
@@ -102,6 +102,50 @@
     name: goaccess
     state: present
   when: ansible_facts['os_family'] == "RedHat"
+
+# ============================================
+# GeoIP 安裝與配置
+# ============================================
+
+- name: 安裝 geoipupdate (MaxMind 官方工具)
+  apt:
+    name: geoipupdate
+    state: present
+    lock_timeout: 300
+  when: ansible_facts['os_family'] == "Debian"
+
+- name: 安裝 libmaxminddb0 (GoAccess GeoIP 依賴)
+  apt:
+    name: libmaxminddb0
+    state: present
+    lock_timeout: 300
+  when: ansible_facts['os_family'] == "Debian"
+
+- name: 建立 GeoIP 資料庫目錄
+  file:
+    path: /var/lib/GeoIP
+    state: directory
+    mode: '0755'
+
+- name: 部署 GeoIP 設定檔
+  template:
+    src: GeoIP.conf.j2
+    dest: /etc/GeoIP.conf
+    mode: '0640'
+
+- name: 執行首次 GeoIP 資料庫下載
+  command: geoipupdate
+  args:
+    creates: /var/lib/GeoIP/GeoLite2-City.mmdb
+
+- name: 設定每週自動更新 GeoIP 資料庫
+  cron:
+    name: "MaxMind GeoIP 自動更新"
+    minute: "0"
+    hour: "3"
+    weekday: "1"
+    job: "geoipupdate && systemctl restart goaccess"
+    user: root
 
 - name: 建立 GoAccess 統計頁面目錄
   file:

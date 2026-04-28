@@ -295,6 +295,33 @@ sudo journalctl -u goaccess -f
 sudo systemctl restart goaccess
 ```
 
+### 地理位置分析 (GeoIP)
+
+GoAccess 整合 MaxMind GeoLite2-City 資料庫，可分析訪問者的國家/城市資訊。
+
+**前置需求**：
+1. 前往 [MaxMind](https://www.maxmind.com) 註冊免費帳號
+2. 取得 **Account ID** 和 **License Key**
+3. 填入 `inventory/{staging,production}/secrets.yml`：
+
+```yaml
+# MaxMind GeoIP 配置
+maxmind_account_id: "123456"
+maxmind_license_key: "your_license_key"
+```
+
+**自動更新**：
+- 每週一凌晨 3 點自動下載最新 GeoIP 資料庫
+- 更新後自動重啟 GoAccess 服務
+- 手動更新：`sudo geoipupdate && sudo systemctl restart goaccess`
+
+**資料位置**：`/var/lib/GeoIP/GeoLite2-City.mmdb`
+
+**注意事項**：
+- IP 定位精確度約為「城市」層級，4G/5G 用戶可能顯示電信商機房位置
+- VPN/Proxy 會影響定位準確性
+- GeoLite2 採用 CC BY-SA 4.0 授權
+
 ## 注意事项
 
 - 首次运行前请确保目标服务器已配置 SSH 免密登录
