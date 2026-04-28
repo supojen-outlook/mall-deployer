@@ -250,6 +250,51 @@ ansible-playbook -i inventory/staging playbooks/site.yml --tags nginx
 ansible-playbook -i inventory/staging playbooks/site.yml --tags app
 ```
 
+## GoAccess 即時監控
+
+部署後自動啟用即時日誌分析，透過 WebSocket 即時更新訪問數據。
+
+### 訪問統計頁面
+
+```
+https://your-domain.com/stats.html
+```
+
+- 需要 Basic Auth 認證（帳密在 `secrets.yml` 設定）
+- 頁面右下角綠色圓點表示 WebSocket 連線正常
+- 數據即時更新，無需重新整理頁面
+
+### 配置變數
+
+在 `inventory/{staging,production}/group_vars/all.yml`：
+
+```yaml
+# GoAccess 配置
+goaccess_ws_port: 7890
+goaccess_stats_path: /var/www/html/stats.html
+```
+
+在 `inventory/{staging,production}/secrets.yml`：
+
+```yaml
+# GoAccess 統計頁面認證
+goaccess_admin_user: "admin"
+goaccess_admin_password: "your-secure-password"
+```
+
+### 服務管理
+
+```bash
+# 檢查服務狀態
+sudo systemctl status goaccess
+
+# 查看即時日誌
+sudo journalctl -u goaccess -f
+
+# 重啟服務
+sudo systemctl restart goaccess
+```
+
 ## 注意事项
 
 - 首次运行前请确保目标服务器已配置 SSH 免密登录

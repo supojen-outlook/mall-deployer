@@ -57,3 +57,80 @@
     name: nginx
     state: started
     enabled: yes
+
+# ============================================
+# GoAccess 安裝與配置
+# ============================================
+
+- name: 安裝 python3-passlib (htpasswd 模組需要)
+  apt:
+    name: python3-passlib
+    state: present
+    lock_timeout: 300
+  when: ansible_facts['os_family'] == "Debian"
+
+- name: 加入 GoAccess GPG key (Debian/Ubuntu)
+  apt_key:
+    url: https://deb.goaccess.io/gnugpg.key
+    keyring: /usr/share/keyrings/goaccess.gpg
+    state: present
+  when: ansible_facts['os_family'] == "Debian"
+
+- name: 加入 GoAccess APT repository (Debian/Ubuntu)
+  apt_repository:
+    repo: "deb [signed-by=/usr/share/keyrings/goaccess.gpg] https://deb.goaccess.io/ {{ ansible_distribution_release }} main"
+    state: present
+    filename: goaccess
+  when: ansible_facts['os_family'] == "Debian"
+
+- name: 安裝 GoAccess (Debian/Ubuntu)
+  apt:
+    name: goaccess
+    state: present
+    update_cache: yes
+    lock_timeout: 300
+  when: ansible_facts['os_family'] == "Debian"
+
+- name: 安裝 EPEL (Red Hat/CentOS)
+  yum:
+    name: epel-release
+    state: present
+  when: ansible_facts['os_family'] == "RedHat"
+
+- name: 安裝 GoAccess (Red Hat/CentOS)
+  yum:
+    name: goaccess
+    state: present
+  when: ansible_facts['os_family'] == "RedHat"
+
+- name: 建立 GoAccess 統計頁面目錄
+  file:
+    path: /var/www/html
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: 建立 Nginx htpasswd 檔案
+  community.general.htpasswd:
+    path: /etc/nginx/.htpasswd
+    name: "{{ goaccess_admin_user }}"
+    password: "{{ goaccess_admin_password }}"
+    owner: root
+    group: www-data
+    mode: '0640'
+
+- name: 部署 GoAccess Systemd Service
+  template:
+    src: goaccess.service.j2
+    dest: /etc/systemd/system/goaccess.service
+
+- name: 重新載入 Systemd
+  systemd:
+    daemon_reload: yes
+
+- name: 啟動並啟用 GoAccess
+  systemd:
+    name: goaccess
+    state: started
+    enabled: yes

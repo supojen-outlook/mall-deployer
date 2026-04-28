@@ -10,11 +10,6 @@
     src: index.html.j2
     dest: "{{ www_root }}/{{ domain }}/index.html"
 
-- name: 部署其他静态文件
-  copy:
-    src: "src/"
-    dest: "{{ www_root }}/{{ domain }}/"
-
 - name: 检查 keygen-tool 是否存在
   stat:
     path: "{{ role_path }}/files/keygen-tool"

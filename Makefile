@@ -22,7 +22,7 @@ else
     VAULT_ARGS := --ask-vault-pass
 endif
 
-.PHONY: help deploy update-images secrets staging production status
+.PHONY: help deploy update-images secrets staging production status goaccess
 
 # ============================================
 # 主要命令
@@ -58,6 +58,7 @@ help:
 	@echo "  $(GREEN)make add-domain$(NC)             - 添加新域名"
 	@echo "  $(GREEN)make vault-setup$(NC)            - 创建 .vault-pass 密码文件"
 	@echo "  $(GREEN)make lint$(NC)                   - 检查 playbook 语法"
+	@echo "  $(GREEN)make goaccess$(NC)               - 在终端查看 Nginx 日志分析报告"
 	@echo "  $(GREEN)make help$(NC)                   - 显示本帮助"
 	@echo ""
 	@echo "$(YELLOW)当前环境:$(NC) $(GREEN)$(ENV)$(NC)"
@@ -176,3 +177,11 @@ ping:
 	ansible -i $(INVENTORY_FILE) all -m ping
 
 status: ping
+
+# ============================================
+# GoAccess 日志分析
+# ============================================
+
+goaccess:
+	@echo "$(BLUE)📊 连接到 $(ENV) 环境查看 GoAccess 报告...$(NC)"
+	@ansible -i $(INVENTORY_FILE) webservers -m shell -a "sudo goaccess /var/log/nginx/access.log --log-format=COMBINED --real-time-html" -t 0 --become

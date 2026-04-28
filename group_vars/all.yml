@@ -18,3 +18,7 @@ api_version: v1.0.0
 www_root: /var/www
 
 # Docker 配置变量自动从 group_vars 和 secrets.yml 加载
+
+# GoAccess 配置
+goaccess_ws_port: 7890
+goaccess_stats_path: /var/www/html/stats.html

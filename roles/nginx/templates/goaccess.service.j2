@@ -1,0 +1,18 @@
+[Unit]
+Description=GoAccess Real-time Web Log Analyzer
+After=network.target nginx.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/goaccess /var/log/nginx/access.log \
+    -o {{ goaccess_stats_path }} \
+    --log-format=COMBINED \
+    --real-time-html \
+    --ws-url=wss://{{ domain }}/goaccess-ws \
+    --port={{ goaccess_ws_port }}
+StandardOutput=null
+StandardError=journal
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

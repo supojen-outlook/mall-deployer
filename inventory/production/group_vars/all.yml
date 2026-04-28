@@ -21,3 +21,7 @@ api_version: v1.0.0
 
 # 证书配置
 webroot_path: /var/www/certbot
+
+# GoAccess 配置
+goaccess_ws_port: 7890
+goaccess_stats_path: /var/www/html/stats.html
