@@ -1,11 +1,16 @@
 #!/bin/bash
-# GoAccess 啟動腳本 - 處理複雜的 log format 引號
+# GoAccess 啟動腳本
+# 使用 COMBINED 格式，依賴 goaccess.conf 中的 geoip-database 設定
+
+LOG_FORMAT='%h %^[%d:%t %^] "%r" %s %b "%R" "%u" "~h{, }"'
+DATE_FORMAT='%d/%b/%Y'
+TIME_FORMAT='%H:%M:%S'
 
 /usr/bin/goaccess /var/log/nginx/access.log \
     -o {{ goaccess_stats_path }} \
-    --log-format='%h %^[%d:%t %^] "%r" %s %b "%R" "%u" "~h{, }"' \
-    --date-format='%d/%b/%Y' \
-    --time-format='%H:%M:%S %z' \
+    --log-format="$LOG_FORMAT" \
+    --date-format="$DATE_FORMAT" \
+    --time-format="$TIME_FORMAT" \
     --real-time-html \
     --geoip-database=/var/lib/GeoIP/GeoLite2-City.mmdb \
     --ws-url=wss://{{ domain }}:443/goaccess-ws \
