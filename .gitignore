@@ -2,3 +2,6 @@
 inventory/*/hosts.yml
 inventory/*/secrets.yml
 .vault-pass
+
+# 动态生成的密钥文件
+roles/app/files/keys/
