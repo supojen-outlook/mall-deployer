@@ -164,6 +164,12 @@
     group: www-data
     mode: '0640'
 
+- name: 部署 GoAccess 啟動腳本
+  template:
+    src: goaccess-wrapper.sh.j2
+    dest: /usr/local/bin/goaccess-wrapper.sh
+    mode: '0755'
+
 - name: 部署 GoAccess Systemd Service
   template:
     src: goaccess.service.j2

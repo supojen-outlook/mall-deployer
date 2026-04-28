@@ -1,0 +1,13 @@
+#!/bin/bash
+# GoAccess 啟動腳本 - 處理複雜的 log format 引號
+
+/usr/bin/goaccess /var/log/nginx/access.log \
+    -o {{ goaccess_stats_path }} \
+    --log-format='%h %^[%d:%t %^] "%r" %s %b "%R" "%u" "~h{, }"' \
+    --date-format='%d/%b/%Y' \
+    --time-format='%H:%M:%S %z' \
+    --real-time-html \
+    --geoip-database=/var/lib/GeoIP/GeoLite2-City.mmdb \
+    --ws-url=wss://{{ domain }}:443/goaccess-ws \
+    --addr=127.0.0.1 \
+    --port={{ goaccess_ws_port }}
