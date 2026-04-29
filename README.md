@@ -322,6 +322,73 @@ maxmind_license_key: "your_license_key"
 - VPN/Proxy 會影響定位準確性
 - GeoLite2 採用 CC BY-SA 4.0 授權
 
+## Rate Limiting (速率限制)
+
+Nginx 已配置 rate limiting 保護全站免受 CC 攻擊和暴力破解。
+
+### 配置檔案位置
+
+- **Zone 定義**：`roles/nginx/templates/nginx.conf.j2`
+- **應用規則**：`roles/app/templates/domain.conf.j2`
+
+### 目前配置
+
+| 路徑 | Zone | 速率限制 | 突發請求 |
+|------|------|----------|----------|
+| `/api/` | `api_limit` | 5 req/s | 10 |
+| `/` 靜態頁面 | `general` | 10 req/s | 20 |
+| `/shop/` | `general` | 10 req/s | 20 |
+| `/admin/` | `general` | 10 req/s | 20 |
+
+### 參數說明
+
+**Zone 定義**（nginx.conf）：
+```nginx
+# 10m = 10MB 記憶體，可儲存約 16 萬個 IP 的狀態
+limit_req_zone $binary_remote_addr zone=api_limit:10m rate=5r/s;
+limit_req_zone $binary_remote_addr zone=general:10m rate=10r/s;
+```
+
+- `$binary_remote_addr`：以客戶端 IP 作為限制依據
+- `zone=api_limit:10m`：Zone 名稱和記憶體大小
+- `rate=5r/s`：每秒最多 5 個請求
+
+**Location 應用**：
+```nginx
+limit_req zone=api_limit burst=10 nodelay;
+```
+
+- `zone=api_limit`：引用定義的 Zone
+- `burst=10`：允許突發 10 個請求的緩衝區
+- `nodelay`：超過 burst 立即返回 503，不等待
+
+### 修改參數的影響
+
+| 調整項目 | 調大 | 調小 |
+|----------|------|------|
+| `rate` | 更寬鬆，可能允許攻擊 | 更嚴格，可能影響正常用戶 |
+| `burst` | 緩衝更多請求 | 更早觸發限制 |
+| Zone 記憶體 | 可追踪更多 IP | IP 狀態更快被清除 |
+
+### 測試速率限制
+
+```bash
+# 發送 20 個並發請求測試
+ab -n 20 -c 5 https://your-domain.com/api/test
+
+# 查看 503 錯誤（被限速）
+ssh root@your-server "grep '503' /var/log/nginx/access.log | tail -5"
+```
+
+### 監控與日誌
+
+被限速的請求會記錄 503 狀態碼：
+```
+192.168.1.1 - - [29/Apr/2026:13:00:00 +0000] "GET /api/ HTTP/1.1" 503 494
+```
+
+GoAccess 會在 "HTTP Status Codes" 面板顯示 503 統計。
+
 ## 注意事项
 
 - 首次运行前请确保目标服务器已配置 SSH 免密登录

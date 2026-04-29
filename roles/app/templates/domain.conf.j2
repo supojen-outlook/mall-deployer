@@ -28,6 +28,7 @@ server {
 
     # 🚀 Admin 後台 (^~ 確保匹配後不再檢查正則)
     location ^~ /admin/ {
+        limit_req zone=general burst=20 nodelay;
         proxy_pass http://127.0.0.1:{{ admin_port }}/;
         proxy_set_header Host $host;
         proxy_buffering on;
@@ -43,6 +44,7 @@ server {
 
     # 🚀 Client 前端
     location ^~ /shop/ {
+        limit_req zone=general burst=20 nodelay;
         proxy_pass http://127.0.0.1:{{ client_port }}/;
         proxy_set_header Host $host;
         proxy_buffering on;
@@ -54,6 +56,7 @@ server {
 
     # ⚙️ API
     location ^~ /api/ {
+        limit_req zone=api_limit burst=10 nodelay;
         proxy_pass http://127.0.0.1:{{ api_port }};
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
@@ -79,6 +82,7 @@ server {
 
     # ✅ 靜態入口網站
     location / {
+        limit_req zone=general burst=20 nodelay;
         root {{ www_root }}/{{ domain }};
         index index.html;
         # 不存在就 404，不 fallback 到 index.html
