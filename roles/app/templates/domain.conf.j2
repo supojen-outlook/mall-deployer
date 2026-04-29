@@ -8,26 +8,26 @@ server {
     ssl_certificate_key /etc/letsencrypt/live/{{ domain }}/privkey.pem;
     include /etc/nginx/conf.d/ssl-params.conf;
 
-    # ✅ 入口網站
-    location / {
-        root {{ www_root }}/{{ domain }};
-        index index.html;
-        try_files $uri /index.html;        
+    # --- [第一優先順序：精確與長路徑匹配] ---
+
+    # 📊 GoAccess 統計頁面 (精確匹配，避免被正則干擾)
+    location = /stats.html {
+        root /var/www/html;
+        auth_basic "Access Restricted";
+        auth_basic_user_file /etc/nginx/.htpasswd;
     }
 
-    # 🚀 Client 前端
-    location /shop/ {
-        proxy_pass http://127.0.0.1:{{ client_port }}/; 
-        proxy_set_header Host $host;
-        proxy_buffering on;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_set_header X-Forwarded-Prefix /shop;
+    # � GoAccess WebSocket
+    location /goaccess-ws {
+        proxy_pass http://127.0.0.1:{{ goaccess_ws_port }};
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "Upgrade";
+        proxy_read_timeout 1h;
     }
 
-    # 🚀 Admin 後台
-    location /admin/ {
+    # 🚀 Admin 後台 (^~ 確保匹配後不再檢查正則)
+    location ^~ /admin/ {
         proxy_pass http://127.0.0.1:{{ admin_port }}/;
         proxy_set_header Host $host;
         proxy_buffering on;
@@ -36,8 +36,24 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
     }
 
+    # 修正不帶斜線的 /admin 訪問
+    location = /admin {
+        return 301 /admin/;
+    }
+
+    # 🚀 Client 前端
+    location ^~ /shop/ {
+        proxy_pass http://127.0.0.1:{{ client_port }}/;
+        proxy_set_header Host $host;
+        proxy_buffering on;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Prefix /shop;
+    }
+
     # ⚙️ API
-    location /api/ {
+    location ^~ /api/ {
         proxy_pass http://127.0.0.1:{{ api_port }};
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
@@ -45,19 +61,27 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
     }
 
-    # 📊 GoAccess 統計頁面
-    location /stats.html {
-        root /var/www/html;
-        auth_basic "Access Restricted";
-        auth_basic_user_file /etc/nginx/.htpasswd;
+    # --- [第二優先順序：正則表達式攔截區] ---
+
+    # � 核心阻擋規則：使用 ~* (不分大小寫) 合併路徑
+    location ~* ^/(?:\.(?:env|git|svn|hg|ds_store|idea|vscode)|config|wp-admin|wp-login\.php|admin\.php|phpmyadmin|mysql|xmlrpc\.php|info|phpinfo|shell|test|swagger|api/docs|console|manager|vendor|composer|package\.json|yarn\.lock|hello\.world)$ {
+        return 404;
+        log_not_found on;
     }
 
-    # 📊 GoAccess WebSocket 轉發
-    location /goaccess-ws {
-        proxy_pass http://127.0.0.1:{{ goaccess_ws_port }};
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "Upgrade";
-        proxy_read_timeout 1h;
+    # 🚫 阻擋惡意副檔名
+    location ~* \.(?:php|jsp|asp|aspx|py|rb|pl|cgi|sh|sql|bak|log|conf|dist)$ {
+        return 404;
+        log_not_found on;
+    }
+
+    # --- [第三優先順序：預設處理] ---
+
+    # ✅ 靜態入口網站
+    location / {
+        root {{ www_root }}/{{ domain }};
+        index index.html;
+        # 不存在就 404，不 fallback 到 index.html
+        try_files $uri $uri/ =404;
     }
 }
