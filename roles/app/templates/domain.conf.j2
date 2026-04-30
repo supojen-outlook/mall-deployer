@@ -13,6 +13,9 @@ server {
     # 📊 GoAccess 統計頁面 (精確匹配，避免被正則干擾)
     location = /stats.html {
         root /var/www/html;
+        charset utf-8;
+        default_type text/html;
+        add_header Content-Type "text/html; charset=utf-8";
         auth_basic "Access Restricted";
         auth_basic_user_file /etc/nginx/.htpasswd;
     }
