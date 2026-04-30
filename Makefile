@@ -22,7 +22,7 @@ else
     VAULT_ARGS := --ask-vault-pass
 endif
 
-.PHONY: help deploy update-images secrets staging production status goaccess
+.PHONY: help deploy update-images secrets staging production status goaccess crowdsec-status crowdsec-metrics crowdsec-decisions crowdsec-explain crowdsec-unban
 
 # ============================================
 # 主要命令
@@ -53,6 +53,13 @@ help:
 	@echo "  $(GREEN)make secrets-view$(NC)           - 查看 secrets.yml 内容"
 	@echo "  $(GREEN)make secrets-staging$(NC)        - 编辑 staging secrets"
 	@echo "  $(GREEN)make secrets-production$(NC)     - 编辑 production secrets"
+	@echo ""
+	@echo "$(YELLOW)安全監控 (CrowdSec):$(NC)"
+	@echo "  $(GREEN)make crowdsec-status$(NC)       - 查看 CrowdSec bouncer 和封鎖名單"
+	@echo "  $(GREEN)make crowdsec-metrics$(NC)      - 查看 CrowdSec 詳細指標"
+	@echo "  $(GREEN)make crowdsec-decisions$(NC)    - 查看所有封鎖決策"
+	@echo "  $(GREEN)make crowdsec-explain IP=x.x.x.x$(NC) - 查看 IP 觸發的規則詳情"
+	@echo "  $(GREEN)make crowdsec-unban IP=x.x.x.x$(NC)  - 手動解除 IP 封鎖"
 	@echo ""
 	@echo "$(YELLOW)其他:$(NC)"
 	@echo "  $(GREEN)make add-domain$(NC)             - 添加新域名"
@@ -185,3 +192,27 @@ status: ping
 goaccess:
 	@echo "$(BLUE)📊 连接到 $(ENV) 环境查看 GoAccess 报告...$(NC)"
 	@ansible -i $(INVENTORY_FILE) webservers -m shell -a "sudo goaccess /var/log/nginx/access.log --log-format=COMBINED --real-time-html" -t 0 --become
+
+# ============================================
+# CrowdSec 安全監控
+# ============================================
+
+crowdsec-status:
+	@echo "$(BLUE)🔒 CrowdSec 狀態檢查...$(NC)"
+	@ansible -i $(INVENTORY_FILE) webservers -m shell -a "cscli bouncers list && echo '---' && cscli decisions list | head -20"
+
+crowdsec-metrics:
+	@echo "$(BLUE)🔒 CrowdSec 指標查看...$(NC)"
+	@ansible -i $(INVENTORY_FILE) webservers -m shell -a "cscli metrics"
+
+crowdsec-decisions:
+	@echo "$(BLUE)🔒 查看封鎖決策...$(NC)"
+	@ansible -i $(INVENTORY_FILE) webservers -m shell -a "cscli decisions list"
+
+crowdsec-explain:
+	@echo "$(BLUE)🔒 查看 IP 詳細觸發規則: $(IP)...$(NC)"
+	@ansible -i $(INVENTORY_FILE) webservers -m shell -a "cscli explain --ip $(IP)"
+
+crowdsec-unban:
+	@echo "$(BLUE)🔒 解除封鎖 IP: $(IP)...$(NC)"
+	@ansible -i $(INVENTORY_FILE) webservers -m shell -a "cscli decisions delete --ip $(IP)"

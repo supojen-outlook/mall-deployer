@@ -1,0 +1,13 @@
+# CrowdSec 通知配置
+# 自動生成，請勿手動修改
+
+{% if crowdsec_notifications_enabled %}
+name: discord_notifications
+filter: "Alert.Remediation == true || evt.Overflow.Alert"
+decisions:
+  - type: ban
+    duration: 4h
+notifications:
+  - discord
+---
+{% endif %}

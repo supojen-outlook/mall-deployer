@@ -1,0 +1,21 @@
+---
+# CrowdSec 預設設定（非敏感變數）
+
+# CAPI 控制台整合
+crowdsec_capi_enabled: false
+
+# Discord 通知
+crowdsec_notifications_enabled: false
+
+# 白名單 IP/CIDR
+crowdsec_whitelist_ips: []
+# 範例:
+#  - "192.168.1.0/24"  # 內網
+#  - "10.0.0.0/8"     # VPN
+
+# 日誌路徑
+crowdsec_nginx_access_log: /var/log/nginx/access.log
+crowdsec_nginx_error_log: /var/log/nginx/error.log
+
+# GeoIP 資料庫路徑（重用 MaxMind）
+crowdsec_geoip_db: /var/lib/GeoIP/GeoLite2-City.mmdb

@@ -389,6 +389,149 @@ ssh root@your-server "grep '503' /var/log/nginx/access.log | tail -5"
 
 GoAccess 會在 "HTTP Status Codes" 面板顯示 503 統計。
 
+## CrowdSec 安全防護
+
+CrowdSec 是開源的入侵防禦系統 (IPS)，可分析 Nginx 日誌自動識別並封鎖惡意 IP。
+
+### 功能特性
+
+- **自動封鎖**：偵測掃描、暴力破解、SQL 注入等攻擊並自動封鎖 IP
+- **社群情報**：透過 CAPI 控制台共享全球威脅情報
+- **Discord 通知**：封鎖事件即時通知
+- **白名單支援**：保護內網/VPN IP 不被誤封
+- **GeoIP 整合**：使用既有 MaxMind 資料庫顯示 IP 地理位置
+
+### 配置變數
+
+**defaults/main.yml**（非敏感）：
+```yaml
+crowdsec_capi_enabled: false          # 啟用 CAPI 控制台
+crowdsec_notifications_enabled: false # 啟用 Discord 通知
+crowdsec_whitelist_ips: []             # 白名單 IP/CIDR
+```
+
+**secrets.yml**（敏感）：
+```yaml
+crowdsec_capi_enroll_key: ""           # CAPI 註冊金鑰
+crowdsec_discord_webhook: ""           # Discord Webhook URL
+```
+
+### Makefile 指令
+
+```bash
+# 查看 CrowdSec 狀態（bouncer + 封鎖名單）
+make crowdsec-status
+
+# 查看詳細指標
+make crowdsec-metrics
+
+# 查看所有封鎖決策
+make crowdsec-decisions
+
+# 查看 IP 觸發的規則詳情
+make crowdsec-explain IP=1.2.3.4
+
+# 手動解除封鎖
+make crowdsec-unban IP=1.2.3.4
+```
+
+### 服務器上的設定檔案
+
+| 檔案路徑 | 用途 |
+|----------|------|
+| `/etc/crowdsec/config.yaml` | 主設定檔，包含 LAPI 位址、資料庫連線 |
+| `/etc/crowdsec/acquis.yaml` | 日誌來源設定（由 Ansible 生成） |
+| `/etc/crowdsec/profiles.yaml` | 通知與輸出設定（由 Ansible 生成） |
+| `/etc/crowdsec/local_api_credentials.yaml` | 本地 API 認證金鑰 |
+| `/var/lib/crowdsec/data/` | 資料庫與下載的解析器/場景 |
+| `/var/log/crowdsec.log` | CrowdSec 日誌 |
+
+### 直接在服務器上使用 cscli
+
+SSH 進入服務器後執行：
+
+```bash
+# 查看封鎖決策
+sudo cscli decisions list
+
+# 查看 IP 觸發的規則詳情
+sudo cscli explain --ip 1.2.3.4
+
+# 手動封鎖 IP（4 小時）
+sudo cscli decisions add --ip 1.2.3.4 --duration 4h --reason "manual block"
+
+# 手動解除封鎖
+sudo cscli decisions delete --ip 1.2.3.4
+
+# 查看詳細指標
+sudo cscli metrics
+
+# 列出已安裝的解析器與場景
+sudo cscli parsers list
+sudo cscli scenarios list
+
+# 查看 bouncer 狀態
+sudo cscli bouncers list
+```
+
+**名詞解釋**：
+
+- **Parsers（解析器）**：把原始日誌轉換成結構化資料。例如 `crowdsecurity/nginx-logs` 會解析 Nginx access.log 的每一行，提取出 IP、時間、URL、狀態碼等欄位。
+
+- **Scenarios（場景）**：定義攻擊模式與觸發條件。例如 `crowdsecurity/ssh-bf` 監測多次 SSH 登入失敗，達到 5 次就觸發警報。常見場景包括：
+  - SSH 暴力破解 (`ssh-bf`)
+  - HTTP 掃描 (`http-crawl-non_statics`, `http-sensitive-files`)
+  - SQL 注入嘗試
+
+- **Bouncers（執行者）**：實際執行封鎖的組件。`crowdsec-firewall-bouncer-nftables` 把被封鎖的 IP 添加到 nftables 規則表，真正攔截流量。可以有多個 bouncer（防火牆、Cloudflare、Nginx 等）。
+
+**運作流程**：
+```
+日誌檔 → Parser 解析 → Scenario 檢測 → 觸發 Alert → Bouncer 封鎖 → nftables DROP
+```
+
+### 使用 nftables 查看與操作
+
+CrowdSec 使用 nftables 實際封鎖 IP。查看規則：
+
+```bash
+# 查看完整的 nftables 規則表
+sudo nft list ruleset
+
+# 查看 CrowdSec 專用的 table
+sudo nft list table ip crowdsec
+
+# 查看封鎖鏈（blocked IPs）
+sudo nft list chain ip crowdsec blocklist
+
+# 查看 DROP 規則數量
+sudo nft list ruleset | grep -c "crowdsec"
+
+# 查看被封鎖的 IP 列表
+sudo nft list set ip crowdsec blocklist
+```
+
+手動操作 nftables（進階）：
+
+```bash
+# 手動添加 IP 到封鎖集合（不建議，應用 cscli）
+sudo nft add element ip crowdsec blocklist { 1.2.3.4 }
+
+# 從封鎖集合移除 IP
+sudo nft delete element ip crowdsec blocklist { 1.2.3.4 }
+
+# 清空所有 CrowdSec 規則（緊急情況）
+sudo nft flush table ip crowdsec
+```
+
+### 啟用 CAPI 控制台（可選）
+
+1. 前往 https://app.crowdsec.net 註冊帳號
+2. 取得 Enroll Key
+3. 填入 `secrets.yml` 的 `crowdsec_capi_enroll_key`
+4. 設定 `crowdsec_capi_enabled: true`
+5. 重新部署
+
 ## 注意事项
 
 - 首次运行前请确保目标服务器已配置 SSH 免密登录
